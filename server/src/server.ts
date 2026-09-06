@@ -20,6 +20,10 @@ import { customerCheckoutRouter, stripeWebhookHandler } from "./routes/customer/
 import { customerCheckoutWithPointsRouter } from "./routes/customer/checkout-with-points.routes";
 import { customerPromoRouter } from "./routes/customer/promo.routes";
 import { adminPromoRouter } from "./routes/admin/promo.routes";
+import { adminOrderRouter } from "./routes/admin/orders.routes";
+import { adminSettingsRouter } from "./routes/admin/settings.routes";
+import { adminDashboardRouter } from "./routes/admin/dashboard.routes";
+import { customerOrderRouter } from "./routes/customer/orders.routes";
 
 const app = express();
 
@@ -66,8 +70,12 @@ app.use("/customer", customerCartWishlistRouter);
 app.use("/customer", customerCheckoutRouter);
 app.use("/customer", customerCheckoutWithPointsRouter);
 app.use("/customer", customerPromoRouter);
+app.use("/customer", customerOrderRouter);
 app.use("/admin", adminProductRouter);
 app.use("/admin", adminPromoRouter);
+app.use("/admin", adminOrderRouter);
+app.use("/admin", adminSettingsRouter);
+app.use("/admin", adminDashboardRouter);
 
 app.use(notFound);
 app.use(errorHandler);
