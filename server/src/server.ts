@@ -16,6 +16,10 @@ import { customerHomeRouter } from "./routes/customer/home.routes";
 import { customerProductRouter } from "./routes/customer/product.routes";
 import { customerAddressRouter } from "./routes/customer/address.routes";
 import { customerCartWishlistRouter } from "./routes/customer/cart-wishlist.routes";
+import { customerCheckoutRouter, stripeWebhookHandler } from "./routes/customer/checkout.routes";
+import { customerCheckoutWithPointsRouter } from "./routes/customer/checkout-with-points.routes";
+import { customerPromoRouter } from "./routes/customer/promo.routes";
+import { adminPromoRouter } from "./routes/admin/promo.routes";
 
 const app = express();
 
@@ -28,6 +32,15 @@ const corsOrigins = (process.env.CORS_ORIGINS || "")
 
 app.use(helmet());
 app.use(cors({ origin: corsOrigins, credentials: true }));
+
+// Stripe webhook needs the untouched request body to verify the signature, so
+// it is mounted with a raw parser before the JSON body parser runs.
+app.post(
+  "/customer/checkout/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhookHandler,
+);
+
 app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
 app.use(hpp());
@@ -50,7 +63,11 @@ app.use("/customer", customerHomeRouter);
 app.use("/customer", customerProductRouter);
 app.use("/customer", customerAddressRouter);
 app.use("/customer", customerCartWishlistRouter);
+app.use("/customer", customerCheckoutRouter);
+app.use("/customer", customerCheckoutWithPointsRouter);
+app.use("/customer", customerPromoRouter);
 app.use("/admin", adminProductRouter);
+app.use("/admin", adminPromoRouter);
 
 app.use(notFound);
 app.use(errorHandler);
