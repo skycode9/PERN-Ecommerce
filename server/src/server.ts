@@ -1,20 +1,30 @@
 import "dotenv/config";
 import express from "express";
 import helmet from "helmet";
+import cors from "cors";
 import hpp from "hpp";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import logger, { morganStream } from "./utils/logger";
 import { ok } from "./utils/envelope";
 import { notFound } from "./middleware/notFound";
 import { errorHandler } from "./middleware/errorhandler";
+import { authRouter } from "./routes/auth/auth.routes";
 
 const app = express();
 
 const isProd = process.env.NODE_ENV === "production";
 
+const corsOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(helmet());
+app.use(cors({ origin: corsOrigins, credentials: true }));
 app.use(express.json({ limit: "10kb" }));
+app.use(cookieParser());
 app.use(hpp());
 app.use(morgan(isProd ? "combined" : "dev", { stream: morganStream }));
 
@@ -29,6 +39,8 @@ app.use(globalLimiter);
 app.get("/health", (_req, res) => {
   res.json(ok({ uptime: process.uptime(), timestamp: new Date().toISOString() }));
 });
+
+app.use("/auth", authRouter);
 
 app.use(notFound);
 app.use(errorHandler);
