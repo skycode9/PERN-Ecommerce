@@ -11,6 +11,7 @@ import { ok } from "./utils/envelope";
 import { notFound } from "./middleware/notFound";
 import { errorHandler } from "./middleware/errorhandler";
 import { authRouter } from "./routes/auth/auth.routes";
+import { adminProductRouter } from "./routes/admin/product.routes";
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/auth", authRouter);
+app.use("/admin", adminProductRouter);
 
 app.use(notFound);
 app.use(errorHandler);
