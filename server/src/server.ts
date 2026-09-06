@@ -12,6 +12,10 @@ import { notFound } from "./middleware/notFound";
 import { errorHandler } from "./middleware/errorhandler";
 import { authRouter } from "./routes/auth/auth.routes";
 import { adminProductRouter } from "./routes/admin/product.routes";
+import { customerHomeRouter } from "./routes/customer/home.routes";
+import { customerProductRouter } from "./routes/customer/product.routes";
+import { customerAddressRouter } from "./routes/customer/address.routes";
+import { customerCartWishlistRouter } from "./routes/customer/cart-wishlist.routes";
 
 const app = express();
 
@@ -42,6 +46,10 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/auth", authRouter);
+app.use("/customer", customerHomeRouter);
+app.use("/customer", customerProductRouter);
+app.use("/customer", customerAddressRouter);
+app.use("/customer", customerCartWishlistRouter);
 app.use("/admin", adminProductRouter);
 
 app.use(notFound);
