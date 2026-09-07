@@ -1,0 +1,2 @@
+cd server && npm run typecheck
+cd ../client && npm run typecheck
