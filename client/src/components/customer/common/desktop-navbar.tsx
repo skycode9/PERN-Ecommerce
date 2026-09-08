@@ -27,6 +27,8 @@ import { useCustomerProfileStore } from "@/features/customer/profile/store";
 import CustomerProfileDialog from "../profile/customer-profile-dialog";
 import { useCustomerOrdersStore } from "@/features/customer/orders/store";
 import CustomerOrdersDialog from "../orders/customer-orders-dialog";
+import { useCustomerCartAndCheckoutStore } from "@/features/customer/cart-and-checkout/store";
+import CustomerCartAndCheckoutDrawer from "../cart-and-checkout/customer-cart-and-checkout-drawer";
 
 type NavItem = {
   label: string;
@@ -105,8 +107,16 @@ export function CustomerNavbar() {
 
   const { openOrders } = useCustomerOrdersStore((state) => state);
 
+  const {
+    setOpen: setCartOpen,
+    cart,
+    loadCart,
+  } = useCustomerCartAndCheckoutStore((state) => state);
+
   useEffect(() => {
     if (!isBootstrapped) return;
+
+    void loadCart(isSignedIn);
 
     if (!isSignedIn) {
       clearWishlist();
@@ -115,7 +125,7 @@ export function CustomerNavbar() {
     }
 
     void loadWishlist();
-  }, [clearWishlist, isBootstrapped, clearProfile, isSignedIn, loadWishlist]);
+  }, [clearWishlist, isBootstrapped, clearProfile, isSignedIn, loadWishlist, loadCart]);
 
   async function handleSignOut() {
     try {
@@ -184,10 +194,10 @@ export function CustomerNavbar() {
             <NavTextLink href="/sign-in" label="Login" icon={LogIn} />
           )}
 
-          <Link to={"/cart"} className={iconLink}>
+          <button type="button" onClick={() => setCartOpen(true)} className={iconLink}>
             <ShoppingCart className="h-4.5 w-4.5" />
-            <span className={cartBadge}>{0}</span>
-          </Link>
+            <span className={cartBadge}>{cart?.items?.length ?? 0}</span>
+          </button>
         </nav>
 
         <CustomerMobileNavbar isSignedIn={isSignedIn} />
@@ -195,6 +205,7 @@ export function CustomerNavbar() {
         {isSignedIn ? <CustomerWishlistDialog /> : null}
         {isSignedIn ? <CustomerProfileDialog /> : null}
         {isSignedIn ? <CustomerOrdersDialog /> : null}
+        <CustomerCartAndCheckoutDrawer />
       </div>
     </header>
   );
