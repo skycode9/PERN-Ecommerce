@@ -1,20 +1,11 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { RouterProvider } from "react-router-dom";
+import { router } from "./router";
 import { useBootstrapAuth } from "./features/auth/useBootstrapAuth";
-import { SignInPage } from "./pages/auth/Sign-in";
-import { SignUpPage } from "./pages/auth/Sign-up";
 
 function App() {
   useBootstrapAuth();
 
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/sign-in" element={<SignInPage />} />
-        <Route path="/sign-up" element={<SignUpPage />} />
-        <Route path="*" element={<Navigate to="/sign-in" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;
