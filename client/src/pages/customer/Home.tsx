@@ -97,13 +97,15 @@ export function StoreHome() {
         <div className={sectionStackClass}>
           <section>
             <div className={bannerGridClass}>
-              <Card className={bannerMainCardClass}>
-                <img
-                  src={mainBanner.imageUrl}
-                  alt="Feature Image"
-                  className={bannerMainImageClass}
-                />
-              </Card>
+              {mainBanner ? (
+                <Card className={bannerMainCardClass}>
+                  <img
+                    src={mainBanner.imageUrl}
+                    alt="Feature Image"
+                    className={bannerMainImageClass}
+                  />
+                </Card>
+              ) : null}
 
               <div className={bannerSideGridClass}>
                 {sideBanners.map((item) => (
