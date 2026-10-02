@@ -36,6 +36,13 @@ export function uploadBufferToCloudinary(
   });
 }
 
+// seeded images live on an external CDN, so there is nothing to remove for them
+export async function deleteFromCloudinary(publicId: string) {
+  if (!publicId || publicId.startsWith("seed/")) return;
+
+  await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+}
+
 export function uploadBuffersToCloudinary(
   buffers: Buffer[],
   folder = "ecommerce/products",

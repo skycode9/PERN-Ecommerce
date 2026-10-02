@@ -54,6 +54,18 @@ export type CheckoutSessionResponse = {
   };
 };
 
+export type PaypalOrderResponse = {
+  paypal: {
+    orderId: string;
+  };
+  order: {
+    id: string;
+    totalItems: number;
+    discountAmount: number;
+    totalAmount: number;
+  };
+};
+
 export type CheckoutConfirmResponse = {
   id: string;
 };

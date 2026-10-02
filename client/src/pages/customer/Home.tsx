@@ -18,13 +18,13 @@ const sectionTitleClass =
 
 const bannerGridClass = "grid gap-6 lg:grid-cols-[1.6fr_1fr]";
 const bannerMainCardClass =
-  "group relative overflow-hidden rounded-[2rem] border border-border/30 bg-card shadow-xl transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5";
+  "group relative gap-0 overflow-hidden py-0 rounded-[2rem] border border-border/30 bg-card shadow-xl transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5";
 const bannerMainImageClass =
   "h-[540px] w-full object-cover transition-all duration-700 group-hover:scale-105";
 
 const bannerSideGridClass = "grid gap-6 sm:grid-cols-2 lg:grid-cols-1";
 const bannerSideCardClass =
-  "group overflow-hidden rounded-[2rem] border border-border/40 bg-card shadow-lg transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5";
+  "group gap-0 overflow-hidden py-0 rounded-[2rem] border border-border/40 bg-card shadow-lg transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5";
 const bannerSideImageClass =
   "h-[258px] w-full object-cover transition-all duration-700 group-hover:scale-105";
 

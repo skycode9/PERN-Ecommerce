@@ -1,0 +1,29 @@
+# Runs the full app locally at http://localhost:8080 against the database in server/.env
+#   docker compose --env-file client/.env up --build
+services:
+  server:
+    build: ./server
+    env_file: ./server/.env
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      TRUST_PROXY: 1
+      CORS_ORIGINS: http://localhost:8080
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+      args:
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+        VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-}
+        VITE_PAYPAL_CLIENT_ID: ${VITE_PAYPAL_CLIENT_ID:-}
+        VITE_DEMO_MODE: ${VITE_DEMO_MODE:-false}
+    environment:
+      PORT: 80
+      API_UPSTREAM: http://server:8080
+    ports:
+      - "8080:80"
+    depends_on:
+      - server
+    restart: unless-stopped

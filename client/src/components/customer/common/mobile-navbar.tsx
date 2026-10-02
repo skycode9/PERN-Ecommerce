@@ -3,6 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   Heart,
+  LayoutDashboard,
   LogIn,
   LogOut,
   Menu,
@@ -13,6 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuthStore } from "@/features/auth/store";
 
 type CustomerMobileNavbarProps = {
   isSignedIn: boolean;
@@ -79,8 +81,11 @@ function DrawerSection({ title, items }: { title: string; items: NavItem[] }) {
 }
 
 export function CustomerMobileNavbar({ isSignedIn }: CustomerMobileNavbarProps) {
+  const isAdmin = useAuthStore((state) => state.user?.role === "admin");
+
   const mobileAccountItems: NavItem[] = isSignedIn
     ? [
+        ...(isAdmin ? [{ label: "Admin Panel", href: "/admin", icon: LayoutDashboard }] : []),
         { label: "Account", href: "/account", icon: User },
         { label: "Wishlist", href: "/wishlist", icon: Heart },
         { label: "Sign Out", href: "/logout", icon: LogOut },

@@ -50,6 +50,19 @@ export const requireAdmin = asyncHandler(
       throw new AppError(403, "Admin access only");
     }
 
+    const demoAdminEmail = process.env.DEMO_ADMIN_EMAIL?.trim().toLowerCase();
+
+    if (demoAdminEmail && req.method !== "GET") {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: req.user.sub },
+        select: { email: true },
+      });
+
+      if (dbUser?.email.toLowerCase() === demoAdminEmail) {
+        throw new AppError(403, "Demo account is read-only");
+      }
+    }
+
     next();
   },
 );

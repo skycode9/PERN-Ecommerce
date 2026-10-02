@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { env } from "@/lib/env";
+import { DEMO_ACCOUNTS, DEMO_PASSWORD } from "@/lib/demo";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -28,12 +30,12 @@ export function SignInPage() {
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const from = (location.state as LocationState)?.from || "/";
+  const from = (location.state as LocationState)?.from;
 
   function completeAuth({ accessToken, user }: AuthResponse) {
     setAccessToken(accessToken);
     setUser(user);
-    navigate(from, { replace: true });
+    navigate(from || (user.role === "admin" ? "/admin" : "/"), { replace: true });
   }
 
   function validate() {
@@ -76,6 +78,12 @@ export function SignInPage() {
     }
   }
 
+  function fillDemo(demoEmail: string) {
+    setEmail(demoEmail);
+    setPassword(DEMO_PASSWORD);
+    setErrors({});
+  }
+
   const busy = submitting || googleLoading;
 
   return (
@@ -86,6 +94,28 @@ export function SignInPage() {
           <CardDescription>Sign in to continue to your account</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          {env.demoMode && (
+            <div className="flex flex-col gap-2 rounded-lg border border-dashed border-border p-3">
+              <p className="text-xs text-muted-foreground">
+                Just looking around? Sign in with a demo account.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {DEMO_ACCOUNTS.map((account) => (
+                  <Button
+                    key={account.email}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => fillDemo(account.email)}
+                  >
+                    {account.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">Email</Label>

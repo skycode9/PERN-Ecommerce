@@ -8,54 +8,9 @@ import { AppError } from "../../utils/AppError";
 import { ok } from "../../utils/envelope";
 import logger from "../../utils/logger";
 import { stripe, CHECKOUT_CURRENCY, toMinorUnits } from "../../utils/stripe";
-import { prepareOrder } from "./checkout.helpers";
+import { createPendingOrder, finalizePaidOrder, prepareOrder } from "./checkout.helpers";
 
 export const customerCheckoutRouter = Router();
-
-// Applies the paid order effects (stock, promo, cart, order status) in a single
-// transaction. Safe to run more than once for the same order — the confirm call
-// and the webhook can both land, and only the first one takes effect.
-async function finalizeStripeOrder(orderId: string) {
-  await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({
-      where: { id: orderId },
-      include: { items: true },
-    });
-
-    if (!order || order.paymentStatus === "paid") {
-      return;
-    }
-
-    for (const item of order.items) {
-      const updated = await tx.product.updateMany({
-        where: { id: item.productId, stock: { gte: item.quantity } },
-        data: { stock: { decrement: item.quantity } },
-      });
-
-      if (updated.count === 0) {
-        throw new AppError(400, "One or more items are out of stock");
-      }
-    }
-
-    if (order.promoCode) {
-      await tx.promo.updateMany({
-        where: { code: order.promoCode, count: { gt: 0 } },
-        data: { count: { decrement: 1 } },
-      });
-    }
-
-    await tx.cartItem.deleteMany({ where: { cart: { userId: order.userId } } });
-
-    await tx.order.update({
-      where: { id: order.id },
-      data: {
-        paymentStatus: "paid",
-        providerPaymentId: order.providerOrderId,
-        paidAt: new Date(),
-      },
-    });
-  });
-}
 
 customerCheckoutRouter.post(
   "/checkout/create-session",
@@ -78,28 +33,9 @@ customerCheckoutRouter.post(
       metadata: { userId: user.id },
     });
 
-    const order = await prisma.order.create({
-      data: {
-        userId: user.id,
-        customerName: user.name || prepared.deliveryName,
-        customerEmail: user.email || "",
-        totalItems: prepared.totalItems,
-        deliveryName: prepared.deliveryName,
-        deliveryAddress: prepared.deliveryAddress,
-        promoCode: prepared.appliedPromoCode || null,
-        discountAmount: prepared.discountAmount,
-        totalAmount: prepared.totalAmount,
-        paymentStatus: "pending",
-        orderStatus: "placed",
-        paymentProvider: "stripe",
-        providerOrderId: paymentIntent.id,
-        items: {
-          create: prepared.items.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-          })),
-        },
-      },
+    const order = await createPendingOrder(user, prepared, {
+      provider: "stripe",
+      providerOrderId: paymentIntent.id,
     });
 
     res.json(
@@ -150,7 +86,7 @@ customerCheckoutRouter.post(
       throw new AppError(400, "Payment is not completed");
     }
 
-    await finalizeStripeOrder(foundOrder.id);
+    await finalizePaidOrder(foundOrder.id, paymentIntent.id);
 
     res.json(ok({ id: foundOrder.id }));
   }),
@@ -185,7 +121,7 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
 
     if (order) {
       try {
-        await finalizeStripeOrder(order.id);
+        await finalizePaidOrder(order.id, paymentIntent.id);
       } catch (error) {
         logger.error(error);
       }

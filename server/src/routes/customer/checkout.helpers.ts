@@ -110,3 +110,78 @@ export async function prepareOrder(
     deliveryAddress,
   };
 }
+
+// Applies the paid order effects (stock, promo, cart, order status) in a single
+// transaction. Safe to run more than once for the same order — a client confirm
+// and a webhook can both land, and only the first one takes effect.
+export async function finalizePaidOrder(orderId: string, providerPaymentId: string) {
+  await prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!order || order.paymentStatus === "paid") {
+      return;
+    }
+
+    for (const item of order.items) {
+      const updated = await tx.product.updateMany({
+        where: { id: item.productId, stock: { gte: item.quantity } },
+        data: { stock: { decrement: item.quantity } },
+      });
+
+      if (updated.count === 0) {
+        throw new AppError(400, "One or more items are out of stock");
+      }
+    }
+
+    if (order.promoCode) {
+      await tx.promo.updateMany({
+        where: { code: order.promoCode, count: { gt: 0 } },
+        data: { count: { decrement: 1 } },
+      });
+    }
+
+    await tx.cartItem.deleteMany({ where: { cart: { userId: order.userId } } });
+
+    await tx.order.update({
+      where: { id: order.id },
+      data: {
+        paymentStatus: "paid",
+        providerPaymentId,
+        paidAt: new Date(),
+      },
+    });
+  });
+}
+
+export async function createPendingOrder(
+  user: { id: string; name: string | null; email: string },
+  prepared: PreparedOrder,
+  payment: { provider: string; providerOrderId: string },
+) {
+  return prisma.order.create({
+    data: {
+      userId: user.id,
+      customerName: user.name || prepared.deliveryName,
+      customerEmail: user.email || "",
+      totalItems: prepared.totalItems,
+      deliveryName: prepared.deliveryName,
+      deliveryAddress: prepared.deliveryAddress,
+      promoCode: prepared.appliedPromoCode || null,
+      discountAmount: prepared.discountAmount,
+      totalAmount: prepared.totalAmount,
+      paymentStatus: "pending",
+      orderStatus: "placed",
+      paymentProvider: payment.provider,
+      providerOrderId: payment.providerOrderId,
+      items: {
+        create: prepared.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
+      },
+    },
+  });
+}

@@ -7,6 +7,7 @@ import type {
   CheckoutPayWithPointsResponse,
   CheckoutPointsResponse,
   CheckoutSessionResponse,
+  PaypalOrderResponse,
   CustomerCartItemIdentifier,
   CustomerCartResponse,
   SyncCustomerCartBody,
@@ -96,4 +97,12 @@ export async function payWithPointsCheckout(body: { addressId: string; promoCode
 
 export async function confirmCheckout(body: { orderId: string; paymentIntentId: string }) {
   return apiPost<CheckoutConfirmResponse, typeof body>("/customer/checkout/confirm", body);
+}
+
+export async function createPaypalOrder(body: { addressId: string; promoCode?: string }) {
+  return apiPost<PaypalOrderResponse, typeof body>("/customer/checkout/paypal/create-order", body);
+}
+
+export async function capturePaypalOrder(body: { orderId: string }) {
+  return apiPost<CheckoutConfirmResponse, typeof body>("/customer/checkout/paypal/capture", body);
 }

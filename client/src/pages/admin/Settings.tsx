@@ -29,8 +29,19 @@ const emptyStateClass = "border border-border bg-background/40 p-6 text-sm text-
 const tableHeaderClass = "flex flex-row items-center justify-between gap-3";
 
 function AdminSettings() {
-  const { items, setFiles, fileCountLabel, loading, refreshBanners, handleUpload, uploading } =
-    useAdminSettings();
+  const {
+    items,
+    setFiles,
+    fileCountLabel,
+    fileInputKey,
+    loading,
+    refreshBanners,
+    handleUpload,
+    handleReplace,
+    handleDelete,
+    uploading,
+    busyId,
+  } = useAdminSettings();
 
   return (
     <div className={pageWrapClass}>
@@ -52,6 +63,7 @@ function AdminSettings() {
                 </div>
 
                 <Input
+                  key={fileInputKey}
                   type="file"
                   multiple
                   accept="image/*"
@@ -75,7 +87,7 @@ function AdminSettings() {
           <Card className={cardClass}>
             <CardHeader className={tableHeaderClass}>
               <CardTitle className={cardTitleClass}>Current Homepage Banners</CardTitle>
-              <Button className={buttonClass} onClick={() => refreshBanners()}>
+              <Button className={buttonClass} disabled={loading} onClick={() => refreshBanners()}>
                 Refresh
               </Button>
             </CardHeader>
@@ -84,7 +96,12 @@ function AdminSettings() {
               {loading ? null : !items.length ? (
                 <div className={emptyStateClass}>No banners uploaded yet !</div>
               ) : (
-                <AdminSettingsBannersTable items={items} />
+                <AdminSettingsBannersTable
+                  items={items}
+                  busyId={busyId}
+                  onReplace={(id, file) => void handleReplace(id, file)}
+                  onDelete={handleDelete}
+                />
               )}
             </CardContent>
           </Card>

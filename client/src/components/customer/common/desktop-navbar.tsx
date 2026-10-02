@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Heart,
+  LayoutDashboard,
   LogIn,
   LogOut,
   ShoppingBag,
@@ -95,6 +96,7 @@ function NavTextLink({
 export function CustomerNavbar() {
   const { user, isBootstrapped, logout } = useAuthStore((state) => state);
   const isSignedIn = !!user;
+  const isAdmin = user?.role === "admin";
 
   const {
     items: wishlistItems,
@@ -174,6 +176,15 @@ export function CustomerNavbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className={accountDropdownContent}>
+                {isAdmin && (
+                  <DropdownMenuItem asChild className={dropdownItemLink}>
+                    <Link to="/admin">
+                      <LayoutDashboard className="h-4 w-4" />
+                      <span>Admin Panel</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+
                 <DropdownMenuItem onClick={() => void openProfile()} className={dropdownItemLink}>
                   <User className="h-4 w-4" />
                   <span>My Account</span>

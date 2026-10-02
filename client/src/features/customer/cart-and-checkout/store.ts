@@ -12,8 +12,10 @@ import type {
 import {
   addCustomerCartItem,
   applyCustomerPromo,
+  capturePaypalOrder,
   confirmCheckout,
   createCheckoutSession,
+  createPaypalOrder,
   decreaseCustomerCartItem,
   getCheckoutData,
   increaseCustomerCartItem,
@@ -39,6 +41,14 @@ type StripeCheckoutArgs = {
   onSuccess: () => void;
 };
 
+type PaypalCreateArgs = {
+  isSignedIn: boolean;
+};
+
+type PaypalCaptureArgs = {
+  onSuccess: () => void;
+};
+
 type PointsArgs = {
   isSignedIn: boolean;
   onSuccess: () => void;
@@ -56,6 +66,8 @@ type CustomerCartAndCheckoutStore = {
   promoLoading: boolean;
   checkoutLoading: boolean;
   pointsCheckoutLoading: boolean;
+  paypalLoading: boolean;
+  paypalPendingOrderId: string;
   setOpen: (value: boolean) => void;
   setCart: (cart: CustomerCartResponse) => void;
   loadCart: (isSignedIn: boolean) => Promise<void>;
@@ -68,6 +80,9 @@ type CustomerCartAndCheckoutStore = {
   applyPromo: () => Promise<void>;
   startStripeCheckout: (args: StripeCheckoutArgs) => Promise<void>;
   startPointsCheckout: (args: PointsArgs) => Promise<void>;
+  startPaypalCheckout: (args: PaypalCreateArgs) => Promise<string>;
+  completePaypalCheckout: (args: PaypalCaptureArgs) => Promise<void>;
+  cancelPaypalCheckout: () => void;
   clear: () => void;
 };
 
@@ -86,6 +101,8 @@ const defaultUiState = {
   promoLoading: false,
   checkoutLoading: false,
   pointsCheckoutLoading: false,
+  paypalLoading: false,
+  paypalPendingOrderId: "",
 };
 
 // helpers
@@ -415,6 +432,78 @@ export const useCustomerCartAndCheckoutStore = create<CustomerCartAndCheckoutSto
       toast.error(error instanceof Error ? error.message : "Unable to complete payment");
     }
   },
+
+  // returns the PayPal order id that the PayPal buttons need to open the approval popup
+  startPaypalCheckout: async ({ isSignedIn }) => {
+    const { selectedAddressId, appliedPromo, cart } = get();
+
+    if (!isSignedIn) {
+      toast.error("sign in to checkout");
+      throw new Error("Not signed in");
+    }
+
+    if (!selectedAddressId) {
+      toast.error("Add a default address from profile section");
+      throw new Error("Missing address");
+    }
+
+    if (!cart.items.length) {
+      toast.error("Your cart is empty");
+      throw new Error("Cart is empty");
+    }
+
+    try {
+      set({ paypalLoading: true });
+
+      const response = await createPaypalOrder({
+        addressId: selectedAddressId,
+        promoCode: appliedPromo?.code || undefined,
+      });
+
+      if (!response.paypal?.orderId || !response.order.id) {
+        throw new Error("Unable to start PayPal checkout");
+      }
+
+      set({ paypalPendingOrderId: response.order.id });
+
+      return response.paypal.orderId;
+    } catch (error) {
+      set({ paypalLoading: false, paypalPendingOrderId: "" });
+      toast.error(error instanceof Error ? error.message : "Unable to start PayPal checkout");
+      throw error;
+    }
+  },
+
+  completePaypalCheckout: async ({ onSuccess }) => {
+    const { paypalPendingOrderId } = get();
+
+    if (!paypalPendingOrderId) {
+      toast.error("PayPal order not found");
+      return;
+    }
+
+    try {
+      const confirmed = await capturePaypalOrder({ orderId: paypalPendingOrderId });
+
+      if (!confirmed.id) {
+        throw new Error("Order confirmation failed");
+      }
+
+      set({
+        cart: emptyCart,
+        isOpen: false,
+        ...defaultUiState,
+      });
+
+      toast.success("Payment successful");
+      onSuccess();
+    } catch (error) {
+      set({ paypalLoading: false });
+      toast.error(error instanceof Error ? error.message : "Unable to complete payment");
+    }
+  },
+
+  cancelPaypalCheckout: () => set({ paypalLoading: false, paypalPendingOrderId: "" }),
 
   startPointsCheckout: async ({ isSignedIn, onSuccess }) => {
     const { selectedAddressId, appliedPromo, points, cart } = get();

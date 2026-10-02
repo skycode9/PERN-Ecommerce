@@ -1,19 +1,25 @@
-FROM node:22-alpine AS deps
+FROM node:22-alpine AS base
+RUN apk add --no-cache openssl
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
 
-FROM node:22-alpine AS build
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+FROM base AS deps
+COPY package.json package-lock.json ./
+RUN npm pkg delete scripts.prepare && npm ci
+
+FROM deps AS build
 COPY . .
-RUN npm run build
+# prisma generate only reads the schema, it never connects
+RUN DIRECT_URL=postgresql://build:build@localhost:5432/build npx prisma generate && npm run build
 
-FROM node:22-alpine AS run
-WORKDIR /app
+FROM base AS run
 ENV NODE_ENV=production
-COPY --from=build /app/node_modules ./node_modules
+COPY package.json package-lock.json ./
+RUN npm pkg delete scripts.prepare && npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/package.json ./package.json
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+USER node
 EXPOSE 8080
-CMD ["node", "dist/server.js"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s \
+  CMD wget -qO- "http://127.0.0.1:${PORT:-8080}/health" > /dev/null || exit 1
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/server.js"]

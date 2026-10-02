@@ -18,6 +18,7 @@ import { customerAddressRouter } from "./routes/customer/address.routes";
 import { customerCartWishlistRouter } from "./routes/customer/cart-wishlist.routes";
 import { customerCheckoutRouter, stripeWebhookHandler } from "./routes/customer/checkout.routes";
 import { customerCheckoutWithPointsRouter } from "./routes/customer/checkout-with-points.routes";
+import { customerCheckoutPaypalRouter } from "./routes/customer/checkout-paypal.routes";
 import { customerPromoRouter } from "./routes/customer/promo.routes";
 import { adminPromoRouter } from "./routes/admin/promo.routes";
 import { adminOrderRouter } from "./routes/admin/orders.routes";
@@ -33,6 +34,9 @@ const corsOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+
+// behind nginx / a load balancer the client ip comes from X-Forwarded-For
+app.set("trust proxy", Number(process.env.TRUST_PROXY) || 0);
 
 app.use(helmet());
 app.use(cors({ origin: corsOrigins, credentials: true }));
@@ -69,6 +73,7 @@ app.use("/customer", customerAddressRouter);
 app.use("/customer", customerCartWishlistRouter);
 app.use("/customer", customerCheckoutRouter);
 app.use("/customer", customerCheckoutWithPointsRouter);
+app.use("/customer", customerCheckoutPaypalRouter);
 app.use("/customer", customerPromoRouter);
 app.use("/customer", customerOrderRouter);
 app.use("/admin", adminProductRouter);

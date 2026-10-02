@@ -1,6 +1,11 @@
 node_modules
 dist
+src/generated
 .env
 .env.*
 .git
+.husky
+logs
 *.log
+Dockerfile
+.dockerignore
