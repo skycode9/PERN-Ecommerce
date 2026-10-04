@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/.husky
+**/*.log
+.git
+.github
+server/src/generated
+server/logs
+docs
+postman

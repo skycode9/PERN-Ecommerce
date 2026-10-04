@@ -10,7 +10,7 @@ const ACCESS_TOKEN_TTL_SECONDS = 60 * 15;
 const REFRESH_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
 export const REFRESH_COOKIE_NAME = "refreshToken";
-const REFRESH_COOKIE_PATH = "/auth";
+const REFRESH_COOKIE_PATH = `${process.env.API_PREFIX ?? ""}/auth`;
 
 export type AccessTokenPayload = {
   sub: string;

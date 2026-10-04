@@ -1,19 +1,21 @@
 services:
   - type: web
-    name: pern-ecom-api
+    name: pern-ecom
     runtime: docker
     plan: free
-    dockerContext: ./server
-    dockerfilePath: ./server/Dockerfile
-    healthCheckPath: /health
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
     buildFilter:
       paths:
+        - client/**
         - server/**
+        - Dockerfile
     envVars:
       - key: NODE_ENV
         value: production
       - key: TRUST_PROXY
-        value: "3"
+        value: "1"
       - key: CORS_ORIGINS
         sync: false
       - key: DATABASE_URL
@@ -44,20 +46,6 @@ services:
         sync: false
       - key: PAYPAL_ENV
         value: sandbox
-
-  - type: web
-    name: pern-ecom
-    runtime: docker
-    plan: free
-    dockerContext: ./client
-    dockerfilePath: ./client/Dockerfile
-    buildFilter:
-      paths:
-        - client/**
-    envVars:
-      # public url of the api service, e.g. https://pern-ecom-api.onrender.com
-      - key: API_UPSTREAM
-        sync: false
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false
       - key: VITE_STRIPE_PUBLISHABLE_KEY

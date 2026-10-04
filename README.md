@@ -99,8 +99,7 @@ sign-in, and Docker images deployed on Render.
 
 ```mermaid
 flowchart LR
-  B[Browser] -->|HTTPS| N[nginx<br/>React build]
-  N -->|/api/*| A[Express API]
+  B[Browser] -->|HTTPS| A[Express<br/>React build + /api]
   A --> DB[(PostgreSQL<br/>Neon)]
   A --> C[Cloudinary]
   A --> S[Stripe]
@@ -108,9 +107,12 @@ flowchart LR
   S -->|webhook| A
 ```
 
-The React app and the API are served from the same origin: nginx serves the static build and
-proxies `/api/*` to the Express service. Because the browser only ever talks to one domain, the
-refresh cookie can stay `SameSite=Strict`.
+The React app and the API are served from the same origin. In production a single image runs
+Express, which serves the API under `/api` and the React build for every other route. Because the
+browser only ever talks to one domain, the refresh cookie can stay `SameSite=Strict`.
+
+`client/` and `server/` also have their own Dockerfiles. Docker Compose uses those, with nginx
+serving the build and proxying `/api/*` to the API container.
 
 ### Auth flow
 
@@ -191,6 +193,7 @@ sequenceDiagram
 │   └── Dockerfile
 ├── postman/                API collection
 ├── .github/workflows/      CI: lint, typecheck, build, docker build
+├── Dockerfile              single production image (api + React build)
 ├── docker-compose.yml
 └── render.yaml
 ```
@@ -270,6 +273,7 @@ A Husky pre-commit hook runs lint-staged on staged files.
 | `PORT`                                                                   | API port (default `8080`)                     |
 | `CORS_ORIGINS`                                                           | Comma-separated allowed origins               |
 | `TRUST_PROXY`                                                            | Number of proxies in front of the API         |
+| `API_PREFIX` / `CLIENT_DIR`                                              | Set by the root image: api path and React build folder |
 | `DATABASE_URL` / `DIRECT_URL`                                            | Pooled and direct Postgres connection strings |
 | `JWT_SECRET`                                                             | Secret for signing access tokens              |
 | `GOOGLE_CLIENT_ID`                                                       | Google OAuth client id                        |
@@ -291,18 +295,16 @@ A Husky pre-commit hook runs lint-staged on staged files.
 
 ## Deployment
 
-The repo includes a [Render Blueprint](render.yaml) with two Docker web services:
-
-1. **pern-ecom-api** runs `prisma migrate deploy` on start and then the API.
-2. **pern-ecom** is nginx serving the React build and proxying `/api` to the API service.
+The repo includes a [Render Blueprint](render.yaml) with one Docker web service built from the
+root [`Dockerfile`](Dockerfile). It builds the React app and the API into one image, runs
+`prisma migrate deploy` on start and then serves both.
 
 Steps:
 
 1. In Render, choose **New → Blueprint** and select this repository.
-2. Fill in the secret values. Set `API_UPSTREAM` on the web service to the API's public url and
-   `CORS_ORIGINS` on the API to the web service's url.
-3. In Google Cloud, add the web url to the OAuth client's authorized JavaScript origins.
-4. In Stripe, add a webhook endpoint at `https://<api-url>/customer/checkout/webhook` for
+2. Fill in the secret values and set `CORS_ORIGINS` to the service's url.
+3. In Google Cloud, add the service url to the OAuth client's authorized JavaScript origins.
+4. In Stripe, add a webhook endpoint at `https://<app-url>/api/customer/checkout/webhook` for
    `payment_intent.succeeded`, then copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
 5. Seed the database once from your machine with `npx prisma db seed`.
 

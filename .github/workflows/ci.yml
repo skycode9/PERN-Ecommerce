@@ -51,3 +51,4 @@ jobs:
       - uses: actions/checkout@v4
       - run: docker build -t pern-ecom-api ./server
       - run: docker build -t pern-ecom-client ./client
+      - run: docker build -t pern-ecom .

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import path from "node:path";
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
@@ -30,6 +31,10 @@ const app = express();
 
 const isProd = process.env.NODE_ENV === "production";
 
+// in the single image the api lives under /api and the react build is served from CLIENT_DIR
+const apiPrefix = process.env.API_PREFIX ?? "";
+const clientDir = process.env.CLIENT_DIR;
+
 const corsOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())
@@ -38,13 +43,20 @@ const corsOrigins = (process.env.CORS_ORIGINS || "")
 // behind nginx / a load balancer the client ip comes from X-Forwarded-For
 app.set("trust proxy", Number(process.env.TRUST_PROXY) || 0);
 
-app.use(helmet());
+app.use(
+  helmet({
+    // the storefront loads Stripe, PayPal and Google scripts and remote product images
+    contentSecurityPolicy: false,
+    // Google and PayPal sign-in open popups that need to talk back to the page
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  }),
+);
 app.use(cors({ origin: corsOrigins, credentials: true }));
 
 // Stripe webhook needs the untouched request body to verify the signature, so
 // it is mounted with a raw parser before the JSON body parser runs.
 app.post(
-  "/customer/checkout/webhook",
+  `${apiPrefix}/customer/checkout/webhook`,
   express.raw({ type: "application/json" }),
   stripeWebhookHandler,
 );
@@ -60,27 +72,49 @@ const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use(globalLimiter);
 
-app.get("/health", (_req, res) => {
+const api = express.Router();
+
+api.use(globalLimiter);
+
+api.get("/health", (_req, res) => {
   res.json(ok({ uptime: process.uptime(), timestamp: new Date().toISOString() }));
 });
 
-app.use("/auth", authRouter);
-app.use("/customer", customerHomeRouter);
-app.use("/customer", customerProductRouter);
-app.use("/customer", customerAddressRouter);
-app.use("/customer", customerCartWishlistRouter);
-app.use("/customer", customerCheckoutRouter);
-app.use("/customer", customerCheckoutWithPointsRouter);
-app.use("/customer", customerCheckoutPaypalRouter);
-app.use("/customer", customerPromoRouter);
-app.use("/customer", customerOrderRouter);
-app.use("/admin", adminProductRouter);
-app.use("/admin", adminPromoRouter);
-app.use("/admin", adminOrderRouter);
-app.use("/admin", adminSettingsRouter);
-app.use("/admin", adminDashboardRouter);
+api.use("/auth", authRouter);
+api.use("/customer", customerHomeRouter);
+api.use("/customer", customerProductRouter);
+api.use("/customer", customerAddressRouter);
+api.use("/customer", customerCartWishlistRouter);
+api.use("/customer", customerCheckoutRouter);
+api.use("/customer", customerCheckoutWithPointsRouter);
+api.use("/customer", customerCheckoutPaypalRouter);
+api.use("/customer", customerPromoRouter);
+api.use("/customer", customerOrderRouter);
+api.use("/admin", adminProductRouter);
+api.use("/admin", adminPromoRouter);
+api.use("/admin", adminOrderRouter);
+api.use("/admin", adminSettingsRouter);
+api.use("/admin", adminDashboardRouter);
+
+app.use(apiPrefix || "/", api);
+
+if (clientDir) {
+  const indexHtml = path.join(clientDir, "index.html");
+
+  app.use(
+    "/assets",
+    express.static(path.join(clientDir, "assets"), { immutable: true, maxAge: "1y" }),
+  );
+  app.use(express.static(clientDir, { index: false }));
+
+  // every other GET is a client-side route, so it gets the react app
+  app.get("/{*splat}", (req, res, next) => {
+    if (apiPrefix && req.path.startsWith(`${apiPrefix}/`)) return next();
+    res.setHeader("Cache-Control", "no-cache");
+    res.sendFile(indexHtml);
+  });
+}
 
 app.use(notFound);
 app.use(errorHandler);
