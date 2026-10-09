@@ -13,7 +13,7 @@ A full-stack clothing store with a customer storefront and an admin panel. Built
 PostgreSQL, Express, React and Node, with Stripe and PayPal payments, custom JWT auth with Google
 sign-in, and Docker images deployed on Render.
 
-**Live demo:** https://pern-ecom.onrender.com
+**Live demo:** https://pern-ecom-4pe4.onrender.com
 
 | Account           | Email                    | Password      |
 | ----------------- | ------------------------ | ------------- |
@@ -282,6 +282,7 @@ A Husky pre-commit hook runs lint-staged on staged files.
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Image uploads                                 |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`                            | Stripe API key and webhook signing secret     |
 | `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` / `PAYPAL_ENV`               | PayPal app credentials, `sandbox` or `live`   |
+| `KEEP_ALIVE_URL` / `KEEP_ALIVE_INTERVAL_MS`                              | Optional: the app pings its own url so a free instance does not sleep (default every 14m 59s) |
 
 **client/.env**
 

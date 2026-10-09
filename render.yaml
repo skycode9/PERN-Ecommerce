@@ -46,6 +46,9 @@ services:
         sync: false
       - key: PAYPAL_ENV
         value: sandbox
+      # the service's own health url, e.g. https://pern-ecom.onrender.com/api/health
+      - key: KEEP_ALIVE_URL
+        sync: false
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false
       - key: VITE_STRIPE_PUBLISHABLE_KEY

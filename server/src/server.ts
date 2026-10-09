@@ -26,6 +26,7 @@ import { adminOrderRouter } from "./routes/admin/orders.routes";
 import { adminSettingsRouter } from "./routes/admin/settings.routes";
 import { adminDashboardRouter } from "./routes/admin/dashboard.routes";
 import { customerOrderRouter } from "./routes/customer/orders.routes";
+import { startKeepAlive } from "./utils/keepAlive";
 
 const app = express();
 
@@ -123,6 +124,7 @@ const port = process.env.PORT ?? 8080;
 
 app.listen(port, () => {
   logger.info(`server listening on port ${port}`);
+  startKeepAlive();
 });
 
 export default app;
