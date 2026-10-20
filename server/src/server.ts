@@ -76,11 +76,12 @@ const globalLimiter = rateLimit({
 
 const api = express.Router();
 
-api.use(globalLimiter);
-
+// registered before the limiter: the platform health checker polls this from one ip
 api.get("/health", (_req, res) => {
   res.json(ok({ uptime: process.uptime(), timestamp: new Date().toISOString() }));
 });
+
+api.use(globalLimiter);
 
 api.use("/auth", authRouter);
 api.use("/customer", customerHomeRouter);
